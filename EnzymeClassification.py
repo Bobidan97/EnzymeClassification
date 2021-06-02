@@ -2,7 +2,8 @@
 
 import torch
 from torch.utils.data import Dataset
-import numpy as np
+from Bio import SeqIO
+from collections import defaultdict
 
 def default_w2i_i2w():
     w2i = dict() #maps word i.e amino acids into index
@@ -21,42 +22,59 @@ def default_w2i_i2w():
 
     return w2i, i2w
 
-class protein_sequences_dataset(Dataset):
 
-        def __init__(self, sequences_file, w2i, i2w, max_seq_length = 500, one_hot = False):
-            super().__init__()
+class ProteinSequencesDataset(Dataset):
 
-            self.one_hot = one_hot_encoding
-            self.max_seq_length = max_seq_length +1
+    def __init__(self, fasta_file, w2i, i2w, device, max_seq_length=500, one_hot=False):
+        super().__init__()
 
-            self.w2i, self.i2w = w2i_dict, i2w_dict
+        self.device = device
+        self.max_seq_length = max_seq_length + 1
+        self.one_hot = one_hot
 
-            self.device = device
+        self.w2i = w2i
+        self.i2w = i2w
 
-            self.data = self.__construct_data(sequences_file)
+        self.data = self.__construct_data(fasta_file)
 
-        def __len__(self):
-            return len(self.data)
+    def __len__(self):
+        return len(self.data)
 
+    def __getitem__(self, idx):
+        return self.data[idx]
 
-        def __getitem__(self, idx):
-            return self.data[idx]
+    def __sym2num_conversion(self, input_, target_):
 
-        def __sym2one_hot_conversion(self,input_,target_):
+        input_num = torch.tensor(
+            [self.w2i.get(element, self.w2i['<unk>']) for element in input_],
+            dtype=torch.long,
+            device=self.device
+        )
 
-            input_num  = torch.zeros((len(input_)),
-                                 dtype  = torch.long,
-                                 device = self.device
-                                     )
-            for i, element in enumerate(input_):
-                input_num[i, self.w2i[element]] = 1
+        target_num = torch.tensor(
+            [self.w2i.get(element, self.w2i['<unk>']) for element in target_],
+            dtype=torch.long,
+            device=self.device
+        )
 
-            target_num  = torch.tensor(
-                                        [self.w2i.get(element,self.w2i['<unk>']) for element in target_],
-                                        dtype  = torch.long,
-                                        device = self.device
-                                    )
+    def __sym2one_hot_conversion(self,input_,target_):
 
-            return input_num,target_num
+        input_num  = torch.zeros((len(input_)),
+                             dtype  = torch.long,
+                             device = self.device
+                                 )
+        for i, element in enumerate(input_):
+            input_num[i, self.w2i[element]] = 1
 
-        def __construct_data(self, sequences_file):
+        target_num = torch.tensor(
+                                    [self.w2i.get(element, self.w2i['<unk>']) for element in target_],
+                                    dtype = torch.long,
+                                    device = self.device
+                                )
+
+        return input_num,target_num
+
+    #def __construct_data(self,fasta_file):
+
+if __name__ == '__main__':
+    print("hello")
