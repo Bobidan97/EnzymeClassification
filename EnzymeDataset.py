@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import LSTM
 import torch
 from torch.utils.data import Dataset
 from Bio import SeqIO
@@ -140,3 +141,6 @@ if __name__ == '__main__':
     dataset = ProteinSequencesDataset("fasta_file",w2i,i2w,torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
     data = dataset.data
     print(dataset.data[0]["input"])
+
+
+    LSTM.LSTMClassifier(input_size, hidden_size, num_layers, num_classes)
