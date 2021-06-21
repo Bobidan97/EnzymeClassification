@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import LSTM
 import torch
 from torch.utils.data import Dataset
 from Bio import SeqIO
@@ -109,12 +108,26 @@ class ProteinSequencesDataset(Dataset):
             input_.extend(['<pad>'] * (self.max_seq_length - len_))
             target_.extend(['<pad>'] * (self.max_seq_length - len_))
 
+            print(f"Working with sequences #{i}")
+            print("BEFORE CONVERTING TO NUMBERS")
+            print("Original sequence:", record.seq)
+            print("Length of sequence:", len_)
+            print("Input: ", input_)
+            print("Target: ", target_)
+
             # need to convert into numerical format
             if self.one_hot:
                 input_, target_ = self.__sym2one_hot_conversion(input_, target_)
             else:
                 input_, target_ = self.__sym2num_conversion(input_, target_)
 
+            print("AFTER CONVERTING TO NUMBERS")
+            print("Input: ", input_)
+            print("Target: ", target_)
+
+            print("\n")
+
+            #Save to data
             data[i]["input"] = input_
             data[i]["target"] = target_
             data[i]["length"] = len_
@@ -122,6 +135,31 @@ class ProteinSequencesDataset(Dataset):
 
         return data
 
+    @property
+    def vocab_size(self):
+        return len(self.w2i)
+
+    @property
+    def max_seq_len(self):
+        return self.max_seq_length
+
+    @property
+    def pad_idx(self):
+        return self.w2i['<pad>']
+
+    @property
+    def sos_idx(self):
+        return self.w2i['<sos>']
+
+    @property
+    def eos_idx(self):
+        return self.w2i['<eos>']
+
+    @property
+    def unk_idx(self):
+        return self.w2i['<unk>']
+
+    #filter function
     def __passed_filter(self, record):
 
         set_amino_acids = set(self.w2i.keys())
@@ -141,6 +179,3 @@ if __name__ == '__main__':
     dataset = ProteinSequencesDataset("fasta_file",w2i,i2w,torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
     data = dataset.data
     print(dataset.data[0]["input"])
-
-
-    LSTM.LSTMClassifier(input_size, hidden_size, num_layers, num_classes)
