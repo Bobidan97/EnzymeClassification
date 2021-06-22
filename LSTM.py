@@ -17,6 +17,7 @@ sequence_length = 28
 num_layers = 1
 hidden_size = 100
 num_classes = 10
+vocab_size = 24
 learning_rate = 0.001
 batch_size = 3
 num_epochs = 2
@@ -38,11 +39,11 @@ class LSTMClassifier(nn.Module):
         self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first = True, bidirectional = False)
         self.fc = nn.Linear(hidden_size, num_classes)
 
-    def forward(self, batch_of_input_sequences, input_sequences_lengths):
+    def forward(self, batch_of_sequences, input_sequences_lengths):
         # sort by sequence length
-        batch_size = batch_of_input_sequences.size(0)
+        batch_size = batch_of_sequences.size(0)
         sorted_lengths, sorted_idx = torch.sort(input_sequences_lengths, descending=True)
-        X = batch_of_input_sequences[sorted_idx]
+        X = batch_of_sequences[sorted_idx]
 
         # Convert X to one_hot
         X = self.transform(X)
@@ -51,24 +52,32 @@ class LSTMClassifier(nn.Module):
         X_packed = pack_padded_sequence(X, sorted_lengths.data.tolist(), batch_first=True)
 
         #Initialise hidden state and initial cell state to zero
-        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(device)
-        c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(device)
+        h0 = torch.zeros(self.num_layers, X.size(0), self.hidden_size).to(device)
+        c0 = torch.zeros(self.num_layers, X.size(0), self.hidden_size).to(device)
 
         #pass through LSTM
-        out, _ = self.lstm(X_packed, (h0,c0))
-        #print("in forward...")
-        #print(out.size())
+        output, _ = self.lstm(X_packed, (h0,c0))
 
         #Pass through linear layer to project to num classes
-        out = self.fc(out[:,-1,:]) #-1 takes the last element of 2nd dimension
+        output = self.fc(output[:,-1,:]) #-1 takes the last element of 2nd dimension
 
-        return out
+        return output
 
-    def transform(self,X):
-        return to_one_hot(X,self.vocab_size,self.device)
+    def transform(self, batch_of_sequences):
+        # Take target and convert to one-hot.
+        # convert batch of sequences to one hot representation
+        batch_size, items_in_seq = batch_of_sequences.size()
+        one_hot = torch.zeros((batch_size, items_in_seq, self.vocab_size), dtype=torch.float, device=device)
+
+        for i in range(batch_size):
+            for j, element in enumerate(batch_of_sequences[i, :]):
+                one_hot[i, j, element] = 1
+
+        return one_hot
+
 
 #Initialise Network
-model = LSTMClassifier(input_size, hidden_size, num_layers, num_classes, device)
+model = LSTMClassifier(input_size, vocab_size, hidden_size, num_layers, num_classes, device)
 model.to(device)
 
 #loss and optimiser
@@ -94,38 +103,14 @@ sequence_dataset = ProteinSequencesDataset(fastafile,
 #define dataloader
 train_loader = DataLoader(sequence_dataset, batch_size, shuffle = False)
 
-#Loop over batches
-for batch in train_loader:
-    print(batch)
-
-#Take target and convert to one-hot. Define function that does conversion first
-def to_one_hot(batch_of_sequences, vocab_size, device):
-
-    #convert batch of sequences to one hot representation
-    batch_size, items_in_seq = batch_of_sequences.size()
-    one_hot = torch.zeros((batch_size, items_in_seq, vocab_size), dtype = torch.float, device = device)
-
-    for i in range(batch_size):
-        for j, element in enumerate(batch_of_sequences[i,:]):
-            one_hot[i,j,element] = 1
-
-    return one_hot
-
-#Loop over one more time
-for batch in train_loader:
-    x = batch["target"]
-    x_one_hot = to_one_hot(x, len(w2i), device)
-    print("Original target: ", x)
-    print("Target in one-hot form: ", x_one_hot)
-    print("\n")
-
 #Train Network
 for epoch in range(num_epochs):
     #number of batch updates per epoch
-    total_steps = len(dataloader)
+    total_steps = len(train_loader)
 
     for batch_idx, data in enumerate(train_loader):
         input = data["input"].to(device = device)
+        length = data["length"].to(device = device)
         targets = data["target"].to(device = device)
 
         #BEFORE RESHAPING
@@ -134,12 +119,11 @@ for epoch in range(num_epochs):
         #print("Targets size:", targets.size()) #[batch_size]
 
         #AFTER RESHAPING
-        #data = data.reshape(-1, sequence_length, input_size)
         #print("After reshaping...")
         #print("Data size:", data.size())    #[batch_size, 28, 28#
 
         #Forward
-        scores = model(input)  #scores of size
+        scores = model(input,length)  #scores of size
 
         #compute loss
         loss = criterion(scores, targets)
