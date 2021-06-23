@@ -44,7 +44,7 @@ class ProteinSequencesDataset(Dataset):
             max_sequence_length: maximum length of protein sequence to be considered for VAE,
                                  whatever is beyond is ignored, int'''
 
-    def __init__(self, fasta_file, w2i, i2w, device, max_seq_length=500):
+    def __init__(self, fasta_file, w2i, i2w, device, max_seq_length = 237):
         super().__init__()
 
         self.device = device
