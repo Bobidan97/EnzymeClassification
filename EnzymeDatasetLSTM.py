@@ -237,10 +237,10 @@ class LSTMClassifier(nn.Module):
         c0 = torch.zeros(self.num_layers, X.size(0), self.hidden_size).to(device)
 
         #pass through LSTM
-        output, _ = self.lstm(X_packed, (h0,c0))
+        output, _, _ = self.lstm(X_packed, (h0, c0))
 
         #Pass through linear layer to project to num classes
-        output = self.fc(output[:,-1,:]) #-1 takes the last element of 2nd dimension
+        output = self.fc(output[:, -1, :])  # -1 takes the last element of 2nd dimension
 
         return output
 
@@ -266,12 +266,12 @@ class LSTMClassifier(nn.Module):
         return one_hot
 
 # now loop over one more time
-for batch in train_loader:
-    X = batch["target"]
-    X_one_hot = one_hot(X,len(w2i),device)
-    print("Original target       :",X)
-    print("Target in one-hot form:",X_one_hot)
-    print("\n")
+#for batch in train_loader:
+    #X = batch["target"]
+    #X_one_hot = one_hot(X,len(w2i),device)
+    #print("Original target       :",X)
+    #print("Target in one-hot form:",X_one_hot)
+    #print("\n")
 
 #Initialise Network
 model = LSTMClassifier(input_size, vocab_size, hidden_size, num_layers, num_classes, device)
