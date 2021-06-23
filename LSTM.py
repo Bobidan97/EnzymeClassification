@@ -46,7 +46,7 @@ class LSTMClassifier(nn.Module):
         X = batch_of_sequences[sorted_idx]
 
         # Convert X to one_hot
-        X = self.transform(X)
+        X = self.one_hot(X)
 
         # packing for efficient passing through RNN
         X_packed = pack_padded_sequence(X, sorted_lengths.data.tolist(), batch_first=True)
@@ -63,7 +63,7 @@ class LSTMClassifier(nn.Module):
 
         return output
 
-    def transform(self, batch_of_sequences):
+    def one_hot(self, batch_of_sequences):
         # Take target and convert to one-hot.
         # convert batch of sequences to one hot representation
         batch_size, items_in_seq = batch_of_sequences.size()
