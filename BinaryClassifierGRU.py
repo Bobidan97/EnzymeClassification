@@ -8,6 +8,7 @@ import torch
 import torch.nn as nn
 from torch.nn.utils.rnn import pack_padded_sequence
 from torch.utils.data import DataLoader
+import matplotlib.pyplot as plt
 
 ###############################ENZYME DATASET CONSTRUCTION####################################
 
@@ -69,7 +70,7 @@ class ProteinSequencesDataset(Dataset):
             max_sequence_length: maximum length of protein sequence to be considered for VAE,
                                  whatever is beyond is ignored, int'''
 
-    def __init__(self, positive_set, negative_set, w2i, i2w, device, max_sequence_length = 500, debug = True):
+    def __init__(self, positive_set, negative_set, w2i, i2w, device, max_sequence_length, debug):
         super().__init__()
 
         self.debug = debug
@@ -299,9 +300,11 @@ class ProteinSequencesDataset(Dataset):
 #################################################################################################################
 
 #define input
-positive_set = "methyltransferaseEC_2.1.1.fasta"
-negative_set = "amidinotransferaseEC_2.1.4.fasta"
+
+positive_set = "positive-set.fasta" #"methyltransferaseEC_2.1.1.fasta"
+negative_set = "negative-set.fasta" #"EC_2.3andEC_2.1.4.fasta"
 max_sequence_length = 6
+
 #set device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -314,11 +317,11 @@ sequence_dataset = ProteinSequencesDataset(positive_set, negative_set,
                                            i2w,
                                            device,
                                            max_sequence_length = max_sequence_length,
-                                           debug = False)
+                                           debug = True)
 
 
 #define dataloader
-batch_size = 2 # 8 sequences in example fasta set so should get 3 batches of sizes 3, 3, and 2.
+batch_size = 2
 dataloader = DataLoader(sequence_dataset, batch_size, shuffle = True)
 
 #print("Length:",len(dataloader))
@@ -328,12 +331,11 @@ dataloader = DataLoader(sequence_dataset, batch_size, shuffle = True)
 
 #Define Hyperparameters
 input_size = len(w2i)
-sequence_length = 28
 num_layers = 1
 hidden_size = 16
 vocab_size = len(w2i)
 learning_rate = 0.001
-batch_size = 3
+
 
 #create binary classification neural network
 class BinaryClassifier(nn.Module):
@@ -348,7 +350,7 @@ class BinaryClassifier(nn.Module):
 
         '''
 
-    def __init__(self, input_size, vocab_size, hidden_size, num_layers, device, bidirectional = False, batch_first = True):
+    def __init__(self, input_size, vocab_size, hidden_size, num_layers, device, bidirectional = False):
         super().__init__()
 
         #variables
@@ -431,11 +433,11 @@ print(model)
 model.to(device)
 
 #loss and optimiser
-loss_fn = torch.nn.BCEWithLogitsLoss()
+criterion = torch.nn.BCEWithLogitsLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate, weight_decay = 0.0)
 
 #Train Network
-num_epochs = 50
+num_epochs = 5
 torch.manual_seed(0)
 
 # track minimum train loss
@@ -462,7 +464,7 @@ for epoch in range(num_epochs):
         # compute loss
         #print(out.shape)
         #print(target_labels)
-        loss = loss_fn(out, target_labels)
+        loss = criterion(out, target_labels)
 
         # do backpropagation
         optimizer.zero_grad()  # clean old gradients
@@ -482,3 +484,10 @@ for epoch in range(num_epochs):
         min_loss_epoch = epoch
 
 print(f"Minimum training loss is achieved at epoch: {min_loss_epoch}. Loss value: {min_loss:0.4f}")
+
+#plotting the loss
+plt.plot(epoch_loss)
+plt.title('Loss vs Epochs')
+plt.xlabel('Epochs')
+plt.ylabel('loss')
+plt.show()
