@@ -7,8 +7,9 @@ from collections import defaultdict
 import torch
 import torch.nn as nn
 from torch.nn.utils.rnn import pack_padded_sequence
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, random_split
 import matplotlib.pyplot as plt
+
 
 ###############################ENZYME DATASET CONSTRUCTION####################################
 
@@ -131,6 +132,7 @@ class ProteinSequencesDataset(Dataset):
         positive_records = [record for record in SeqIO.parse(positive_fasta_file, "fasta") if self.__passed_filter(record) == True]
         negative_records = [record for record in SeqIO.parse(negative_fasta_file, "fasta") if self.__passed_filter(record) == True]
 
+
         #start counter
         i = 0
 
@@ -143,6 +145,7 @@ class ProteinSequencesDataset(Dataset):
             # convert to a list
             sequence = list(record.seq)
             sequence_plus_sos = ['<sos>'] + sequence
+
 
             # obtain input and target as character arrays
             input_ = sequence_plus_sos[:self.max_sequence_length] + ['<eos>']
@@ -248,6 +251,7 @@ class ProteinSequencesDataset(Dataset):
 
         return data
 
+
         # filter function
     def __passed_filter(self, record):
         '''
@@ -312,6 +316,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 w2i, i2w = default_w2i_i2w()
 
 #construct dataset
+
 sequence_dataset = ProteinSequencesDataset(positive_set, negative_set,
                                            w2i,
                                            i2w,
@@ -319,11 +324,15 @@ sequence_dataset = ProteinSequencesDataset(positive_set, negative_set,
                                            max_sequence_length = max_sequence_length,
                                            debug = True)
 
+train_size = int(0.8 * len(sequence_dataset))
+test_size = len(sequence_dataset) - train_size
+train_dataset, test_dataset = random_split(sequence_dataset, [train_size, test_size])
 
-#define dataloader
+
+#define dataloader and load data
 batch_size = 2
-dataloader = DataLoader(sequence_dataset, batch_size, shuffle = True)
-
+train_loader = DataLoader(sequence_dataset, batch_size, shuffle = True)
+#test_loader = DataLoader()
 #print("Length:",len(dataloader))
 
 #for batch in dataloader:
@@ -446,10 +455,10 @@ min_loss_epoch = 0
 
 for epoch in range(num_epochs):
     #number of batch updates per epoch
-    n_batches_per_epoch = len(dataloader)
+    n_batches_per_epoch = len(train_loader)
     epoch_loss = 0.0
 
-    for batch_idx, data_batch in enumerate(dataloader):
+    for batch_idx, data_batch in enumerate(train_loader):
         #get X and Y
         sequences = data_batch["input"]
         target_labels = data_batch["target"]
