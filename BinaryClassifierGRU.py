@@ -305,8 +305,8 @@ class ProteinSequencesDataset(Dataset):
 
 #define input
 
-positive_set = "positive-set.fasta" #"methyltransferaseEC_2.1.1.fasta"
-negative_set = "negative-set.fasta" #"EC_2.3andEC_2.1.4.fasta"
+positive_set = "methyltransferaseEC_2.1.1.fasta" #"positive-set.fasta"
+negative_set = "EC_2.3andEC_2.1.4.fasta" #"negative-set.fasta"
 max_sequence_length = 6
 
 #set device
@@ -326,13 +326,14 @@ sequence_dataset = ProteinSequencesDataset(positive_set, negative_set,
 
 train_size = int(0.8 * len(sequence_dataset))
 test_size = len(sequence_dataset) - train_size
-train_dataset, test_dataset = random_split(sequence_dataset, [train_size, test_size])
+train_dataset, test_dataset = random_split(sequence_dataset, [train_size, test_size], generator= torch.Generator().manual_seed(0))
 
 
 #define dataloader and load data
-batch_size = 2
-train_loader = DataLoader(sequence_dataset, batch_size, shuffle = True)
-#test_loader = DataLoader()
+batch_size = 64
+train_loader = DataLoader(train_dataset, batch_size, shuffle = True)
+test_loader = DataLoader(test_dataset, batch_size, shuffle = True)
+
 #print("Length:",len(dataloader))
 
 #for batch in dataloader:
@@ -432,11 +433,11 @@ class BinaryClassifier(nn.Module):
 
 #Initialise Network
 model = BinaryClassifier(input_size,
-                            vocab_size,
-                            hidden_size,
-                            num_layers,
-                            bidirectional = False,
-                            device = device)
+                         vocab_size,
+                         hidden_size,
+                         num_layers,
+                         bidirectional = False,
+                         device = device)
 
 print(model)
 model.to(device)
