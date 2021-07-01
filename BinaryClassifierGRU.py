@@ -454,12 +454,15 @@ torch.manual_seed(0)
 min_loss       = 100000000.0
 min_loss_epoch = 0
 
+model.train()
+
 for epoch in range(num_epochs):
     #number of batch updates per epoch
     n_batches_per_epoch = len(train_loader)
     epoch_loss = 0.0
 
     for batch_idx, data_batch in enumerate(train_loader):
+
         #get X and Y
         sequences = data_batch["input"]
         target_labels = data_batch["target"]
@@ -495,9 +498,35 @@ for epoch in range(num_epochs):
 
 print(f"Minimum training loss is achieved at epoch: {min_loss_epoch}. Loss value: {min_loss:0.4f}")
 
-#plotting the loss
-plt.plot(epoch_loss)
-plt.title('Loss vs Epochs')
-plt.xlabel('Epochs')
-plt.ylabel('loss')
-plt.show()
+#evaluate model
+
+def check_accuracy(Dataloader, model):
+    if Dataloader.train_loader:
+        print("Checking accuracy on training data")
+    else:
+        print("Checking accuracy on test data")
+
+    num_correct = 0.0
+    num_samples = 0.0
+    model.eval()
+
+    with torch.no_grad():
+        for batch_idx, data_batch in enumerate(test_loader):
+
+            #get X and Y
+            sequences = data_batch["input"]
+            target_labels = data_batch["target"]
+            sequences_lengths = data_batch["length"]
+
+            # forward pass through NN
+            out = model(sequences, sequences_lengths)
+            _, predictions = out.max(1)
+            num_correct += (predictions == target_labels).sum()
+            num_samples += predictions.size(0)
+
+        print(f'Got {num_correct}/{num_samples} with accuracy {float(num_correct)/float(num_samples)*100:.2f}')
+
+
+check_accuracy(train_loader, model)
+check_accuracy(test_loader, model)
+
