@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 from torch.nn.utils.rnn import pack_padded_sequence
 from torch.utils.data import DataLoader, random_split
-import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix, classification_report
 
 
 ###############################ENZYME DATASET CONSTRUCTION####################################
@@ -322,7 +322,7 @@ sequence_dataset = ProteinSequencesDataset(positive_set, negative_set,
                                            i2w,
                                            device,
                                            max_sequence_length = max_sequence_length,
-                                           debug = True)
+                                           debug = False)
 
 train_size = int(0.8 * len(sequence_dataset))
 test_size = len(sequence_dataset) - train_size
@@ -446,8 +446,18 @@ model.to(device)
 criterion = torch.nn.BCEWithLogitsLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate, weight_decay = 0.0)
 
+#Define classification accuracy
+def binary_acc(predicted,test):
+    predicted_tag = torch.round(torch.sigmoid(predicted))
+
+    correct_results_sum = (predicted_tag == test).sum().float()
+    acc = correct_results_sum/test.shape[0]
+    acc = torch.round(acc*100)
+
+    return acc
+
 #Train Network
-num_epochs = 5
+num_epochs = 1
 torch.manual_seed(0)
 
 # track minimum train loss
@@ -460,6 +470,7 @@ for epoch in range(num_epochs):
     #number of batch updates per epoch
     n_batches_per_epoch = len(train_loader)
     epoch_loss = 0.0
+    epoch_acc = 0.0
 
     for batch_idx, data_batch in enumerate(train_loader):
 
@@ -474,10 +485,13 @@ for epoch in range(num_epochs):
 
         # forward pass through NN
         out = model(sequences, sequences_lengths)
+
         # compute loss
         #print(out.shape)
         #print(target_labels)
+
         loss = criterion(out, target_labels)
+        acc = binary_acc(out, target_labels)
 
         # do backpropagation
         optimizer.zero_grad()  # clean old gradients
@@ -486,10 +500,12 @@ for epoch in range(num_epochs):
 
         # accumulate epoch loss
         epoch_loss += loss.item()
+        epoch_acc += acc.item()
 
         # print average epoch loss
     avg_epoch_loss = epoch_loss / n_batches_per_epoch
-    print(f"Epoch [{epoch}/{num_epochs}], Average loss: {avg_epoch_loss:0.4f}")
+
+    print(f"Epoch [{epoch}/{num_epochs}] | Average loss: {avg_epoch_loss:0.4f} | Accuracy: {epoch_acc/len(train_loader):.3f}")
 
     # track where minimum is achieved
     if avg_epoch_loss < min_loss:
@@ -498,35 +514,36 @@ for epoch in range(num_epochs):
 
 print(f"Minimum training loss is achieved at epoch: {min_loss_epoch}. Loss value: {min_loss:0.4f}")
 
-#evaluate model
+#Evaluate model
 
-def check_accuracy(Dataloader, model):
-    if Dataloader.train_loader:
-        print("Checking accuracy on training data")
-    else:
-        print("Checking accuracy on test data")
+#create lists for our target and predicted
+model_predicted_list = []
+target_labels_list = []
+model.eval()
+with torch.no_grad():
+    for batch_idx, data_batch in enumerate(test_loader):
+        #get X and Y
+        sequences = data_batch["input"]
+        target_labels = data_batch["target"]
+        sequences_lengths = data_batch["length"]
 
-    num_correct = 0.0
-    num_samples = 0.0
-    model.eval()
+        # forward pass through NN
+        out = model(sequences, sequences_lengths)
+        #print(out)
+        model_predicted = torch.round(out)
+        model_predicted_list.append(model_predicted.cpu().numpy())
+        target_labels_list.append(target_labels.cpu().numpy())
 
-    with torch.no_grad():
-        for batch_idx, data_batch in enumerate(test_loader):
+#append to list
+model_predicted_list = [predicted_values.squeeze().tolist() for predicted_values in model_predicted_list]
+target_labels_list = [target_values.squeeze().tolist() for target_values in target_labels_list]
 
-            #get X and Y
-            sequences = data_batch["input"]
-            target_labels = data_batch["target"]
-            sequences_lengths = data_batch["length"]
+#convert list of lists into one list for confusion matrix
+model_predicted_list = [item for sublist in model_predicted_list for item in sublist]
+target_labels_list = [item for sublist in target_labels_list for item in sublist]
 
-            # forward pass through NN
-            out = model(sequences, sequences_lengths)
-            _, predictions = out.max(1)
-            num_correct += (predictions == target_labels).sum()
-            num_samples += predictions.size(0)
+#confusion matrix and classification report
+confusion_matrix = confusion_matrix(target_labels_list, model_predicted_list)
+print(confusion_matrix)
 
-        print(f'Got {num_correct}/{num_samples} with accuracy {float(num_correct)/float(num_samples)*100:.2f}')
-
-
-check_accuracy(train_loader, model)
-check_accuracy(test_loader, model)
-
+print(classification_report(target_labels_list, model_predicted_list))
