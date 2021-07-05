@@ -457,7 +457,7 @@ def binary_acc(predicted,test):
     return acc
 
 #Train Network
-num_epochs = 1
+num_epochs = 10
 torch.manual_seed(0)
 
 # track minimum train loss
