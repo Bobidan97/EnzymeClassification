@@ -212,10 +212,10 @@ def validate(model, test_loader, criterion, binary_acc):
             epoch_val_loss += loss.item()
             epoch_val_acc += acc.item()
 
-        #average epoch loss
-        avg_val_epoch_loss = (epoch_val_loss / n_batches_per_epoch)
+    #average epoch loss
+    avg_val_epoch_loss = (epoch_val_loss / n_batches_per_epoch)
 
-        return epoch_val_loss, epoch_val_acc, avg_val_epoch_loss
+    return epoch_val_loss, epoch_val_acc, avg_val_epoch_loss
 
 #lists to store per epoch loss and accuracy values
 epoch_loss, epoch_acc, avg_epoch_loss = [], [], []
@@ -244,11 +244,18 @@ for epoch in range(num_epochs):
     print(f"Epoch [{epoch + 1}/{num_epochs}] | Average training loss: {train_avg_epoch_loss:0.4f} | Training Accuracy: {train_epoch_accuracy:0.3f}")
     print(f"Epoch [{epoch + 1}/{num_epochs}] | Average validation loss: {val_avg_epoch_loss:0.4f} | Validation Accuracy: {val_epoch_accuracy:0.3f}")
 
+# track minimum train loss
+min_loss = 100000000.0
+min_loss_epoch = 0
+
+#track where minimum is achieved
+if train_avg_epoch_loss < min_loss:
+    min_loss = train_avg_epoch_loss
+    min_loss_epoch = epoch
+
 end = time.time()
 print(f"Training Time: {(end-start)/60:.3f} minutes")
 print(f"Minimum training loss is achieved at epoch: {min_loss_epoch}. Loss value: {min_loss:0.4f}")
-
-
 
 
 
