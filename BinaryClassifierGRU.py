@@ -122,15 +122,6 @@ model.to(device)
 criterion = torch.nn.BCEWithLogitsLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate, weight_decay = 0.0)
 
-#initialise early stopping
-if args['early_stopping']:
-    print('INFO: Initializing early stopping')
-    early_stopping = EarlyStopping()
-
-    # change the accuracy, loss plot names and model name
-    loss_plot_name = 'es_loss'
-    acc_plot_name = 'es_accuracy'
-    model_name = 'es_model'
 
 #Define classification accuracy
 def binary_acc(predicted,test):
@@ -145,6 +136,7 @@ def binary_acc(predicted,test):
 #Train Network
 num_epochs = 5
 torch.manual_seed(0)
+
 #track minimum train loss
 min_loss = 100000000.0
 min_loss_epoch = 0
@@ -191,6 +183,7 @@ def train(model,train_loader, criterion, optimizer, binary_acc):
 
 #validation function
 def validate(model, test_loader, criterion, binary_acc):
+
     # evaluation mode
     model.eval()
     epoch_val_loss = 0.0
@@ -227,8 +220,10 @@ def validate(model, test_loader, criterion, binary_acc):
 #lists to store per epoch loss and accuracy values
 epoch_loss, epoch_acc, avg_epoch_loss = [], [], []
 epoch_val_loss, epoch_val_acc, avg_val_epoch_loss = [], [], []
+
 #start timer
 start = time.time()
+
 #training and validation loop
 for epoch in range(num_epochs):
 
@@ -246,8 +241,8 @@ for epoch in range(num_epochs):
     epoch_val_acc.append(val_epoch_accuracy)
     avg_val_epoch_loss.append(val_avg_epoch_loss)
 
-    print(f"Epoch [{epoch + 1}/{num_epochs}] | Average training loss: {avg_epoch_loss:0.4f} | Training Accuracy: {epoch_acc / len(train_loader):.3f}")
-    print(f"Epoch [{epoch + 1}/{num_epochs}] | Average validation loss: {avg_epoch_loss:0.4f} | Validation Accuracy: {epoch_val_acc / len(test_loader):.3f}")
+    print(f"Epoch [{epoch + 1}/{num_epochs}] | Average training loss: {train_avg_epoch_loss:0.4f} | Training Accuracy: {train_epoch_accuracy:0.3f}")
+    print(f"Epoch [{epoch + 1}/{num_epochs}] | Average validation loss: {val_avg_epoch_loss:0.4f} | Validation Accuracy: {val_epoch_accuracy:0.3f}")
 
 end = time.time()
 print(f"Training Time: {(end-start)/60:.3f} minutes")
