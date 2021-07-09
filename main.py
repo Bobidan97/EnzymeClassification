@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 
 import torch
-import torch.nn as nn
+#import torch.nn as nn
 from torch.utils.data import DataLoader, random_split
 import time
 import argparse
-import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix, classification_report
+#from sklearn.metrics import confusion_matrix, classification_report
 # here I import everything I need from utilities.py
 from utilities import (
                         default_w2i_i2w,
@@ -15,8 +14,6 @@ from utilities import (
                         train_nn,
                         validate_nn
                       )
-
-#def main():
 
 
 def train(args):
@@ -45,6 +42,7 @@ def train(args):
                                                 max_sequence_length = max_sequence_length,
                                                 debug               = False
                                               )
+
     # split the dataset into train/validation
     train_size                  = int(0.8 * len(sequence_dataset))
     test_size                   = len(sequence_dataset) - train_size
