@@ -137,10 +137,10 @@ def train(args):
 
 if __name__ == '__main__':
     main()
+    train()
 
 
     # here I call train(): this means that when in the command line you type: python3 main.py -> train() is called.
-    #train(args)
     '''
     Your tasks:
     1. Determine which values need to be parameterized (for example, number of epochs) and make those values as parameters.
