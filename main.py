@@ -16,28 +16,8 @@ from utilities import (
                         validate_nn
                       )
 
-def main():
-    parser = argparse.ArgumentParser(description='Neural network parameters')
-    parser.add_argument('--batch_size', type=int, default=64,
-                        help='input batch size for training (default: 64)')
-    parser.add_argument('--epochs', type=int, default=100,
-                        help='number of epochs to train (default: 100)')
-    parser.add_argument('--learning_rate', type=int, default=0.001,
-                        help='learning rate of neural network (default: 0.001')
-    parser.add_argument('--num_layers', type=int, default=1,
-                        help='number of layers in neural network')
-    parser.add_argument('--hidden_size', type=int, default=128,
-                        help='hidden size within a single layer (default: 128)')
-    parser.add_argument('--weight_decay', type=int, default=0.0,
-                        help=' L2-normalisation constant (default: 0.0)')
-    parser.add_argument('--positive_set', required=True, type=str,
-                        help='Positive enzyme sequence set for learning')
-    parser.add_argument('--negative_set', required=True, type=str,
-                        help='Negative enzyme sequence set for learning')
-    parser.add_argument('--max_seq_length', required=True, type=int,
-                        help='Maximum sequence length from dataset')
-    args = parser.parse_args()
-    train(args)
+#def main():
+
 
 def train(args):
     # set seed
@@ -136,9 +116,27 @@ def train(args):
     print(f"Minimum training loss is achieved at epoch: {min_loss_epoch}. Loss value: {min_loss:0.4f}")
 
 if __name__ == '__main__':
-    main()
-    train()
-
+    parser = argparse.ArgumentParser(description='Neural network parameters')
+    parser.add_argument('--batch_size', type=int, dest="batch_size", default=64,
+                        help='input batch size for training (default: 64)')
+    parser.add_argument('--epochs', type=int, dest="epochs", default=100,
+                        help='number of epochs to train (default: 100)')
+    parser.add_argument('--learning_rate', type=int, dest="learning_rate", default=0.001,
+                        help='learning rate of neural network (default: 0.001')
+    parser.add_argument('--num_layers', type=int, dest="num_layers", default=1,
+                        help='number of layers in neural network')
+    parser.add_argument('--hidden_size', type=int, dest="hidden_size", default=128,
+                        help='hidden size within a single layer (default: 128)')
+    parser.add_argument('--weight_decay', type=int, dest="weight_decay", default=0.0,
+                        help=' L2-normalisation constant (default: 0.0)')
+    parser.add_argument('--positive_set', required=True, type=str, dest="positive_set",
+                        help='Positive enzyme sequence set for learning')
+    parser.add_argument('--negative_set', required=True, type=str, dest="negative_set",
+                        help='Negative enzyme sequence set for learning')
+    parser.add_argument('--max_seq_length', required=True, type=int, dest="max_seq_length",
+                        help='Maximum sequence length from dataset')
+    args = parser.parse_args()
+    train(args)
 
     # here I call train(): this means that when in the command line you type: python3 main.py -> train() is called.
     '''
