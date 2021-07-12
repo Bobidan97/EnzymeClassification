@@ -468,7 +468,7 @@ def validate_nn(model, test_loader, criterion):
 #create early stop class to stop training when loss does not improve for epochs
 class EarlyStopping():
 
-    def __init__(self, patience=30, min_delta=10):
+    def __init__(self, patience=10, min_delta=0.0):
         """
         patience: how many epochs to wait before stopping when loss is not improving.
         min_delta: minimum difference between new loss and old loss for new loss to be considered as an improvement
