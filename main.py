@@ -92,7 +92,7 @@ def train(args):
     acc_plot_name = 'accuracy'
     model_name = 'model'
 
-    if args['early_stopping']:
+    if args.early_stopping:
         print('INFO: Initializing early stopping')
         early_stopping = EarlyStopping()
         #change the accuracy, loss plot names and model name
@@ -117,7 +117,7 @@ def train(args):
         epoch_val_loss.append(val_epoch_loss)
         epoch_val_acc.append(val_epoch_accuracy)
 
-        if args ['early_stopping']:
+        if args.early_stopping:
             early_stopping(val_epoch_loss)
             if early_stopping.early_stop:
                 break
@@ -145,27 +145,27 @@ def train(args):
     print('Saving loss and accuracy plots...')
     # accuracy plots
     plt.figure(figsize=(10, 7))
-    plt.plot(train_epoch_accuracy, color='green', label='train accuracy')
-    plt.plot(val_epoch_accuracy, color='blue', label='validation accuracy')
+    plt.plot(epoch_acc, color='green', label='train accuracy')
+    plt.plot(epoch_val_acc, color='blue', label='validation accuracy')
     plt.xlabel('Epochs')
     plt.ylabel('Accuracy')
     plt.legend()
-    plt.savefig(f"../outputs/{acc_plot_name}.png")
+    #plt.savefig(f"C:/Users/alex_/PycharmProjects/EnzymeClassification/outputs/{acc_plot_name}.png")
     plt.show()
 
     # loss plots
     plt.figure(figsize=(10, 7))
-    plt.plot(train_epoch_loss, color='orange', label='train loss')
-    plt.plot(val_epoch_loss, color='red', label='validation loss')
+    plt.plot(epoch_loss, color='orange', label='train loss')
+    plt.plot(epoch_val_loss, color='red', label='validation loss')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.legend()
-    plt.savefig(f"../outputs/{loss_plot_name}.png")
+    #plt.savefig(f"C:/Users/alex_/PycharmProjects/EnzymeClassification/outputs/{loss_plot_name}.png")
     plt.show()
 
     # serialize the model to disk
     print('Saving model...')
-    torch.save(model.state_dict(), f"../outputs/{model_name}.pth")
+    #torch.save(model.state_dict(), f"C:/Users/alex_/PycharmProjects/EnzymeClassification/outputs/{model_name}.pth")
 
     print('TRAINING COMPLETE')
 
