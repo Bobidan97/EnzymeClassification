@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
 import torch
-#import torch.nn as nn
 from torch.utils.data import DataLoader, random_split
 import time
 import argparse
+import matplotlib.pyplot as plt
+import matplotlib
 #from sklearn.metrics import confusion_matrix, classification_report
 # here I import everything I need from utilities.py
 from utilities import (
@@ -12,9 +13,11 @@ from utilities import (
                         ProteinSequencesDataset,
                         BinaryClassifier,
                         train_nn,
-                        validate_nn
+                        validate_nn,
+                        save_checkpoint,
+                        EarlyStopping
                       )
-
+matplotlib.style.use('ggplot')
 
 def train(args):
     # set seed
@@ -84,12 +87,25 @@ def train(args):
     epoch_loss, epoch_acc          = [], []
     epoch_val_loss, epoch_val_acc  = [], []
 
+    # if not using `--early_stopping`, then use simple names
+    loss_plot_name = 'loss'
+    acc_plot_name = 'accuracy'
+    model_name = 'model'
+
+    if args['early_stopping']:
+        print('INFO: Initializing early stopping')
+        early_stopping = EarlyStopping()
+        #change the accuracy, loss plot names and model name
+        loss_plot_name = 'es_loss'
+        acc_plot_name = 'es_accuracy'
+        model_name = 'es_model'
+
     #start timer
     start = time.time()
 
     # loop over epochs
     for epoch in range(num_epochs):
-        
+
         train_epoch_loss, train_epoch_accuracy = train_nn(model, train_loader, criterion, optimizer)
         val_epoch_loss, val_epoch_accuracy     = validate_nn(model, test_loader, criterion)
 
@@ -101,6 +117,11 @@ def train(args):
         epoch_val_loss.append(val_epoch_loss)
         epoch_val_acc.append(val_epoch_accuracy)
 
+        if args ['early_stopping']:
+            early_stopping(val_epoch_loss)
+            if early_stopping.early_stop:
+                break
+                
         print(f"Epoch [{epoch}/{num_epochs}]    |    Average train loss: {train_epoch_loss:0.4f}    |    Average val loss: {val_epoch_loss:0.4f}    |    Average train accuracy: {train_epoch_accuracy:.2f}    |    Average val accuracy: {val_epoch_accuracy:.2f}")
 
         # compute where min loss happens -> for train loss!
@@ -108,10 +129,46 @@ def train(args):
             min_loss       = train_epoch_loss
             min_loss_epoch = epoch
 
+            # Create checkpoint for saving model parameters
+            if epoch == 2:
+                checkpoint = {'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict(),
+                              'train_loss': train_epoch_loss.state_dict(), 'val_loss': val_epoch_loss.state_dict(),
+                              'train_accuracy': train_epoch_accuracy.state_dict(), 'val_accuracy': val_epoch_accuracy.state_dict()}
+                save_checkpoint(checkpoint)
+
     end = time.time()
 
     print(f"Training Time: {(end-start)/60:.3f} minutes")
     print(f"Minimum training loss is achieved at epoch: {min_loss_epoch}. Loss value: {min_loss:0.4f}")
+
+
+    print('Saving loss and accuracy plots...')
+    # accuracy plots
+    plt.figure(figsize=(10, 7))
+    plt.plot(train_epoch_accuracy, color='green', label='train accuracy')
+    plt.plot(val_epoch_accuracy, color='blue', label='validation accuracy')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.legend()
+    plt.savefig(f"../outputs/{acc_plot_name}.png")
+    plt.show()
+
+    # loss plots
+    plt.figure(figsize=(10, 7))
+    plt.plot(train_epoch_loss, color='orange', label='train loss')
+    plt.plot(val_epoch_loss, color='red', label='validation loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.savefig(f"../outputs/{loss_plot_name}.png")
+    plt.show()
+
+    # serialize the model to disk
+    print('Saving model...')
+    torch.save(model.state_dict(), f"../outputs/{model_name}.pth")
+
+    print('TRAINING COMPLETE')
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Neural network parameters')
@@ -133,10 +190,33 @@ if __name__ == '__main__':
                         help='Negative enzyme sequence set for learning')
     parser.add_argument('--max_seq_length', required=True, type=int, dest="max_seq_length",
                         help='Maximum sequence length from dataset')
+    parser.add_argument('--early_stopping', dest='early_stopping', action='store_true')
     args = parser.parse_args()
     train(args)
 
-    # here I call train(): this means that when in the command line you type: python3 main.py -> train() is called.
+#####Add confusion matrix and classification report
+    # model_predicted_list = []
+    # target_labels_list = []
+    # out = torch.sigmoid(out)
+    # model_predicted = torch.round(out)
+    # model_predicted_list.append(model_predicted.cpu().numpy())
+    # target_labels_list.append(target_labels.cpu().numpy())
+
+    # append to list
+    # model_predicted_list = [predicted_values.squeeze().tolist() for predicted_values in model_predicted_list]
+    # print(model_predicted_list)
+
+    # target_labels_list = [target_values.squeeze().tolist() for target_values in target_labels_list]
+
+    # convert list of lists into one list for confusion matrix
+    # model_predicted_list = [item for sublist in model_predicted_list for item in sublist]
+    # target_labels_list = [item for sublist in target_labels_list for item in sublist]
+
+    # confusion matrix and classification report
+    # confusion_matrix = confusion_matrix(target_labels_list, model_predicted_list)
+    # print(confusion_matrix)
+
+    # print(classification_report(target_labels_list, model_predicted_list))
     '''
     Your tasks:
     1. Determine which values need to be parameterized (for example, number of epochs) and make those values as parameters.

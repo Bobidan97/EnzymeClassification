@@ -382,6 +382,9 @@ def binary_acc(predicted,test):
     acc = torch.round(acc*100)
 
     return acc
+def save_checkpoint(state, filename = "checkpoint.pth.tar"):
+    print("Saving checkpoint")
+    torch.save(state, filename)
 
 ## train function
 def train_nn(model,train_loader, criterion, optimizer):
@@ -460,3 +463,30 @@ def validate_nn(model, test_loader, criterion):
     avg_val_epoch_acc  = (epoch_val_acc / n_batches_per_epoch)
 
     return avg_val_epoch_loss, avg_val_epoch_acc
+
+#create early stop class to stop training when loss does not improve for epochs
+class EarlyStopping():
+
+    def __init__(self, patience=5, min_delta=0):
+        """
+        patience: how many epochs to wait before stopping when loss is not improving.
+        min_delta: minimum difference between new loss and old loss for new loss to be considered as an improvement
+
+        """
+        self.patience = patience
+        self.min_delta = min_delta
+        self.counter = 0
+        self.best_loss = None
+        self.early_stop = False
+
+    def __call__(self, epoch_val_loss):
+        if self.best_loss == None:
+            self.best_loss = epoch_val_loss
+        elif self.best_loss - epoch_val_loss > self.min_delta:
+            self.best_loss = epoch_val_loss
+        elif self.best_loss - epoch_val_loss < self.min_delta:
+            self.counter += 1
+            print(f"INFO: Early stopping counter {self.counter} of {self.patience}")
+            if self.counter >= self.patience:
+                print('INFO: Early stopping')
+                self.early_stop = True
