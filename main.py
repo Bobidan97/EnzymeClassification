@@ -118,7 +118,7 @@ def train(args):
         epoch_val_acc.append(val_epoch_accuracy)
 
         if args.early_stopping:
-            early_stopping(val_epoch_loss)
+            early_stopping(val_epoch_loss, val_epoch_accuracy)
             if early_stopping.early_stop:
                 break
                 
