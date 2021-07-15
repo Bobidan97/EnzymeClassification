@@ -6,6 +6,8 @@ from torch.nn.utils.rnn import pack_padded_sequence
 from torch.utils.data import Dataset
 from Bio import SeqIO
 from collections import defaultdict
+from sklearn.metrics import confusion_matrix, classification_report
+
 
 '''
 Here is what I have done.
@@ -383,9 +385,35 @@ def binary_acc(predicted,test):
 
     return acc
 
+##save checkpoint
 def save_checkpoint(state, filename = "checkpoint.pth.tar"):
     print("Saving checkpoint")
     torch.save(state, filename)
+
+## Classification report and confusion matrix
+def confusion_report(out, target_labels):
+    #initiate lists
+    model_predicted_list = []
+    target_labels_list = []
+
+    # for confusion matrix
+    model_predicted = torch.round(torch.sigmoid(out))
+    model_predicted_list.append(model_predicted.cpu().numpy())
+    target_labels_list.append(target_labels.cpu().numpy())
+
+    # append to list
+    model_predicted_list = [predicted_values.squeeze().tolist() for predicted_values in model_predicted_list]
+    target_labels_list = [target_values.squeeze().tolist() for target_values in target_labels_list]
+
+    # convert list of lists into one list for confusion matrix
+    model_predicted_list = [item for sublist in model_predicted_list for item in sublist]
+    target_labels_list = [item for sublist in target_labels_list for item in sublist]
+
+    # confusion matrix and classification report
+    confusion = confusion_matrix(target_labels_list, model_predicted_list)
+    report = classification_report(target_labels_list, model_predicted_list, zero_division=0)
+
+    return confusion, report
 
 ## train function
 def train_nn(model,train_loader, criterion, optimizer):
@@ -459,16 +487,20 @@ def validate_nn(model, test_loader, criterion):
             epoch_val_loss += loss.item()
             epoch_val_acc += acc.item()
 
+            #confusion matrix and classification report
+            confusion_report(out, target_labels)
+
     #average epoch loss
     avg_val_epoch_loss = (epoch_val_loss / n_batches_per_epoch)
     avg_val_epoch_acc  = (epoch_val_acc / n_batches_per_epoch)
 
-    return avg_val_epoch_loss, avg_val_epoch_acc
+    return avg_val_epoch_loss, avg_val_epoch_acc, confusion_report
+
 
 #create early stop class to stop training when loss does not improve for epochs
 class EarlyStopping():
 
-    def __init__(self, patience=5, min_delta=0.0005):
+    def __init__(self, patience = 5, min_delta = 0.005 ):
         """
         patience: how many epochs to wait before stopping when loss is not improving.
         min_delta: minimum difference between new loss and old loss for new loss to be considered as an improvement
@@ -491,3 +523,4 @@ class EarlyStopping():
             if self.counter >= self.patience:
                 print('INFO: Early stopping')
                 self.early_stop = True
+

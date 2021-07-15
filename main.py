@@ -6,8 +6,7 @@ import time
 import argparse
 import matplotlib.pyplot as plt
 import matplotlib
-#from sklearn.metrics import confusion_matrix, classification_report
-# here I import everything I need from utilities.py
+from sklearn.metrics import confusion_matrix, classification_report
 from utilities import (
                         default_w2i_i2w,
                         ProteinSequencesDataset,
@@ -15,9 +14,12 @@ from utilities import (
                         train_nn,
                         validate_nn,
                         save_checkpoint,
-                        EarlyStopping
-                      )
+                        EarlyStopping,
+                        confusion_report
+                       )
+
 matplotlib.style.use('ggplot')
+
 
 def train(args):
     # set seed
@@ -123,14 +125,16 @@ def train(args):
                 break
                 
         print(f"Epoch [{epoch}/{num_epochs}]    |    Average train loss: {train_epoch_loss:0.4f}    |    Average val loss: {val_epoch_loss:0.4f}    |    Average train accuracy: {train_epoch_accuracy:.2f}    |    Average val accuracy: {val_epoch_accuracy:.2f}")
+        print(confusion)
+        print(report)
 
-        # compute where min loss happens -> for train loss!
+        # compute where min loss happens -> for train loss.
         if train_epoch_loss < min_loss:
             min_loss       = train_epoch_loss
             min_loss_epoch = epoch
 
             # Create checkpoint for saving model parameters
-            if epoch == 2:
+            if epoch == 5:
                 checkpoint = {'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict(),
                               'train_loss': train_epoch_loss.state_dict(), 'val_loss': val_epoch_loss.state_dict(),
                               'train_accuracy': train_epoch_accuracy.state_dict(), 'val_accuracy': val_epoch_accuracy.state_dict()}
@@ -174,7 +178,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Neural network parameters')
     parser.add_argument('--batch_size', type=int, dest="batch_size", default=64,
                         help='input batch size for training (default: 64)')
-    parser.add_argument('--epochs', type=int, dest="epochs", default=100,
+    parser.add_argument('--epochs', type=int, dest="epochs", default=200,
                         help='number of epochs to train (default: 100)')
     parser.add_argument('--learning_rate', type=int, dest="learning_rate", default=0.001,
                         help='learning rate of neural network (default: 0.001')
@@ -197,8 +201,7 @@ if __name__ == '__main__':
 #####Add confusion matrix and classification report
     # model_predicted_list = []
     # target_labels_list = []
-    # out = torch.sigmoid(out)
-    # model_predicted = torch.round(out)
+    # model_predicted = torch.round(torch.sigmoid(out))
     # model_predicted_list.append(model_predicted.cpu().numpy())
     # target_labels_list.append(target_labels.cpu().numpy())
 
@@ -217,6 +220,7 @@ if __name__ == '__main__':
     # print(confusion_matrix)
 
     # print(classification_report(target_labels_list, model_predicted_list))
+
     '''
     Your tasks:
     1. Determine which values need to be parameterized (for example, number of epochs) and make those values as parameters.

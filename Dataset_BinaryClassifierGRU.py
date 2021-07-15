@@ -304,10 +304,11 @@ class ProteinSequencesDataset(Dataset):
 #################################################################################################################
 
 #define input
-
-positive_set = "methyltransferaseEC_2.1.1.fasta" #"positive-set.fasta"
-negative_set = "EC_2.3andEC_2.1.4.fasta" #"negative-set.fasta"
-max_sequence_length = 1000
+#positive_set = "positive-set.fasta"
+#negative_set = "negative-set.fasta"
+positive_set = "methyltransferaseEC_2.1.1.fasta"
+negative_set = "EC_2.3andEC_2.1.4.fasta"
+max_sequence_length = 6
 
 #set device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -503,7 +504,7 @@ for epoch in range(num_epochs):
         epoch_loss += loss.item()
         epoch_acc += acc.item()
 
-        # print average epoch loss
+    # print average epoch loss
     avg_epoch_loss = (epoch_loss / n_batches_per_epoch)
 
     print(f"Epoch [{epoch}/{num_epochs}] | Average training loss: {avg_epoch_loss:0.4f} | Training Accuracy: {epoch_acc/len(train_loader):.3f}")
@@ -516,8 +517,9 @@ for epoch in range(num_epochs):
     print(f"Minimum training loss is achieved at epoch: {min_loss_epoch}. Loss value: {min_loss:0.4f}")
 
     #Evaluate model
+    model_predicted_list = []
+    target_labels_list = []
     with torch.no_grad():
-
         #evaluation mode
         model.eval()
         for batch_idx, data_batch in enumerate(test_loader):
@@ -529,39 +531,37 @@ for epoch in range(num_epochs):
             # forward pass through NN
             out = model(sequences, sequences_lengths)
 
+            #for confusion matrix
+            model_predicted = torch.round(torch.sigmoid(out))
+            model_predicted_list.append(model_predicted.cpu().numpy())
+            target_labels_list.append(target_labels.cpu().numpy())
+
             loss = criterion(out, target_labels)
             acc = binary_acc(out, target_labels)
 
             epoch_validation_loss += loss.item()
             epoch_validation_acc += acc.item()
 
-
     avg_epoch_loss = (epoch_validation_loss / n_batches_per_epoch)
+
+    # append to list
+    model_predicted_list = [predicted_values.squeeze().tolist() for predicted_values in model_predicted_list]
+    target_labels_list = [target_values.squeeze().tolist() for target_values in target_labels_list]
+
+    # convert list of lists into one list for confusion matrix
+    model_predicted_list = [item for sublist in model_predicted_list for item in sublist]
+    target_labels_list = [item for sublist in target_labels_list for item in sublist]
+
+
+    # confusion matrix and classification report
+    confusion_matrix_final = confusion_matrix(target_labels_list, model_predicted_list)
+    print(confusion_matrix_final)
+    print(classification_report(target_labels_list, model_predicted_list, zero_division=0))
 
     print(f"Epoch [{epoch}/{num_epochs}] | Average validation loss: {avg_epoch_loss:0.4f} | Validation Accuracy: {epoch_validation_acc / len(test_loader):.3f}")
 
 
-#model_predicted_list = []
-#target_labels_list = []
-#out = torch.sigmoid(out)
-#model_predicted = torch.round(out)
-#model_predicted_list.append(model_predicted.cpu().numpy())
-#target_labels_list.append(target_labels.cpu().numpy())
-
-#append to list
-#model_predicted_list = [predicted_values.squeeze().tolist() for predicted_values in model_predicted_list]
-#print(model_predicted_list)
-
-#target_labels_list = [target_values.squeeze().tolist() for target_values in target_labels_list]
-
-#convert list of lists into one list for confusion matrix
-#model_predicted_list = [item for sublist in model_predicted_list for item in sublist]
-#target_labels_list = [item for sublist in target_labels_list for item in sublist]
 
 
 
-#confusion matrix and classification report
-#confusion_matrix = confusion_matrix(target_labels_list, model_predicted_list)
-#print(confusion_matrix)
 
-#print(classification_report(target_labels_list, model_predicted_list))
