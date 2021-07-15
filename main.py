@@ -109,7 +109,7 @@ def train(args):
     for epoch in range(num_epochs):
 
         train_epoch_loss, train_epoch_accuracy = train_nn(model, train_loader, criterion, optimizer)
-        val_epoch_loss, val_epoch_accuracy     = validate_nn(model, test_loader, criterion)
+        val_epoch_loss, val_epoch_accuracy, confusion, report = validate_nn(model, test_loader, criterion)
 
         #append train outputs to lists
         epoch_loss.append(train_epoch_loss)
@@ -125,6 +125,7 @@ def train(args):
                 break
                 
         print(f"Epoch [{epoch}/{num_epochs}]    |    Average train loss: {train_epoch_loss:0.4f}    |    Average val loss: {val_epoch_loss:0.4f}    |    Average train accuracy: {train_epoch_accuracy:.2f}    |    Average val accuracy: {val_epoch_accuracy:.2f}")
+
         print(confusion)
         print(report)
 
