@@ -6,16 +6,15 @@ import time
 import argparse
 import matplotlib.pyplot as plt
 import matplotlib
-from sklearn.metrics import confusion_matrix, classification_report
 from utilities import (
                         default_w2i_i2w,
                         ProteinSequencesDataset,
                         BinaryClassifier,
+                        save_list,
+                        loadList,
                         train_nn,
                         validate_nn,
-                        save_checkpoint,
-                        EarlyStopping,
-                        confusion_report
+                        EarlyStopping
                        )
 
 matplotlib.style.use('ggplot')
@@ -104,7 +103,6 @@ def train(args):
 
     #start timer
     start = time.time()
-
     # loop over epochs
     for epoch in range(num_epochs):
 
@@ -126,26 +124,29 @@ def train(args):
                 
         print(f"Epoch [{epoch}/{num_epochs}]    |    Average train loss: {train_epoch_loss:0.4f}    |    Average val loss: {val_epoch_loss:0.4f}    |    Average train accuracy: {train_epoch_accuracy:.2f}    |    Average val accuracy: {val_epoch_accuracy:.2f}")
 
-        print(confusion)
-        print(report)
-
         # compute where min loss happens -> for train loss.
         if train_epoch_loss < min_loss:
             min_loss       = train_epoch_loss
             min_loss_epoch = epoch
-
-            # Create checkpoint for saving model parameters
-            if epoch == 5:
-                checkpoint = {'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict(),
-                              'train_loss': train_epoch_loss.state_dict(), 'val_loss': val_epoch_loss.state_dict(),
-                              'train_accuracy': train_epoch_accuracy.state_dict(), 'val_accuracy': val_epoch_accuracy.state_dict()}
-                save_checkpoint(checkpoint)
 
     end = time.time()
 
     print(f"Training Time: {(end-start)/60:.3f} minutes")
     print(f"Minimum training loss is achieved at epoch: {min_loss_epoch}. Loss value: {min_loss:0.4f}")
 
+    ##print for best model
+    #print(confusion)
+    #print(report)
+
+    #save loss and accuracy lists
+    loss_acc_list = (epoch_loss, epoch_acc, epoch_val_loss, epoch_val_acc)
+    save_list(loss_acc_list, "loss_acc.npy")
+
+    ##save model
+    save = {"model_state": model.state_dict(),
+            "optim_state": optimizer.state_dict()}
+    FILE = "model.pth"
+    torch.save(save, FILE)
 
     print('Saving loss and accuracy plots...')
     # accuracy plots
@@ -179,7 +180,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Neural network parameters')
     parser.add_argument('--batch_size', type=int, dest="batch_size", default=64,
                         help='input batch size for training (default: 64)')
-    parser.add_argument('--epochs', type=int, dest="epochs", default=200,
+    parser.add_argument('--epochs', type=int, dest="epochs", default=100,
                         help='number of epochs to train (default: 100)')
     parser.add_argument('--learning_rate', type=int, dest="learning_rate", default=0.001,
                         help='learning rate of neural network (default: 0.001')
@@ -198,43 +199,4 @@ if __name__ == '__main__':
     parser.add_argument('--early_stopping', dest='early_stopping', action='store_true')
     args = parser.parse_args()
     train(args)
-
-#####Add confusion matrix and classification report
-    # model_predicted_list = []
-    # target_labels_list = []
-    # model_predicted = torch.round(torch.sigmoid(out))
-    # model_predicted_list.append(model_predicted.cpu().numpy())
-    # target_labels_list.append(target_labels.cpu().numpy())
-
-    # append to list
-    # model_predicted_list = [predicted_values.squeeze().tolist() for predicted_values in model_predicted_list]
-    # print(model_predicted_list)
-
-    # target_labels_list = [target_values.squeeze().tolist() for target_values in target_labels_list]
-
-    # convert list of lists into one list for confusion matrix
-    # model_predicted_list = [item for sublist in model_predicted_list for item in sublist]
-    # target_labels_list = [item for sublist in target_labels_list for item in sublist]
-
-    # confusion matrix and classification report
-    # confusion_matrix = confusion_matrix(target_labels_list, model_predicted_list)
-    # print(confusion_matrix)
-
-    # print(classification_report(target_labels_list, model_predicted_list))
-
-    '''
-    Your tasks:
-    1. Determine which values need to be parameterized (for example, number of epochs) and make those values as parameters.
-        I.E. in case of number of epochs you would call a function like: train(num_epochs = 5).
-        You also need to think how to provide parameters to train() function. You can try argparse (I saw you tried using it) or typer (https://typer.tiangolo.com/tutorial/first-steps/).
-    2. You need to implement how to determine when to stop training.
-        You can try EarlyStopping (as you tried but did not finish) or you can train until very end and then determine which epoch gave you the best desired result.
-        Obviously, for the latter you would need to save model parameters after each epoch.
-    3. Create nice plots.
-    4. Save model parameters (check https://pytorch.org/tutorials/beginner/saving_loading_models.html)
-
-    Please, check the code and its comments. You should find some useful information in them.
-    Also, I ran the model on toy dataset to show that I can achieve 100% accuracy on validation data.
-    If you run the code as provided you should be able to see similar results.
-    '''
 
