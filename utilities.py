@@ -10,20 +10,6 @@ from sklearn.metrics import confusion_matrix, classification_report
 import numpy as np
 
 
-'''
-Here is what I have done.
-1. Mover everything to here (utilities). This means that all code, either class (BinaryClassifier,ProteinDataset) or
-    any function (default_w2i_i2w) will be here. I cannot promise I won't define anything in the main function, but 
-    at least, I won't define anything BIG there. This is to avoid code being too difficult to read and maintain.
-2. Changed train_nn and validate_nn functions (both name and content). Please, check.
-    out = model() -> out are LOGITS.
-    You pass LOGITS to criterion() and to binary_acc(). You don't need to do logistic transformation. Logistic transformation happens in each of those 2 functions internally (see binary_acc()).
-    Moreover, since now everything is in one place (utilities.py), you don't need to supply binary_acc() as argument.
-'''
-##### SOME CONSTANTS
-#amino_acids    = ['A','R','N','D','C','Q','E','G','H','I','L','K','M','F','P','S','T','W','Y','V']
-#special_tokens = ['<pad>', '<unk>', '<sos>', '<eos>']
-
 ## function to obtain maps: AA into numbers and back
 def default_w2i_i2w():
     w2i = dict() #maps word i.e amino acids into index
@@ -487,7 +473,7 @@ def validate_nn(model, test_loader, criterion):
 #create early stop class to stop training when loss does not improve for epochs
 class EarlyStopping():
 
-    def __init__(self, patience = 5, min_delta = 0.001 ):
+    def __init__(self, patience = 10, min_delta = 0.001 ):
         """
         patience: how many epochs to wait before stopping when loss is not improving.
         min_delta: minimum difference between new loss and old loss for new loss to be considered as an improvement

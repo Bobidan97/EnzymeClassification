@@ -99,7 +99,6 @@ def train(args):
         #change the accuracy, loss plot names and model name
         loss_plot_name = 'es_loss'
         acc_plot_name = 'es_accuracy'
-        model_name = 'es_model'
 
     #start timer
     start = time.time()
@@ -125,28 +124,22 @@ def train(args):
         print(f"Epoch [{epoch}/{num_epochs}]    |    Average train loss: {train_epoch_loss:0.4f}    |    Average val loss: {val_epoch_loss:0.4f}    |    Average train accuracy: {train_epoch_accuracy:.2f}    |    Average val accuracy: {val_epoch_accuracy:.2f}")
 
         # compute where min loss happens -> for train loss.
-        if train_epoch_loss < min_loss:
-            min_loss       = train_epoch_loss
+        if val_epoch_loss < min_loss:
+            min_loss       = val_epoch_loss
             min_loss_epoch = epoch
+
+        if val_epoch_accuracy > 75:
+            print(confusion)
+            print(report)
 
     end = time.time()
 
     print(f"Training Time: {(end-start)/60:.3f} minutes")
-    print(f"Minimum training loss is achieved at epoch: {min_loss_epoch}. Loss value: {min_loss:0.4f}")
-
-    ##print for best model
-    #print(confusion)
-    #print(report)
+    print(f"Minimum validation loss is achieved at epoch: {min_loss_epoch}. Loss value: {min_loss:0.4f}")
 
     #save loss and accuracy lists
     loss_acc_list = (epoch_loss, epoch_acc, epoch_val_loss, epoch_val_acc)
-    save_list(loss_acc_list, "loss_acc.npy")
-
-    ##save model
-    save = {"model_state": model.state_dict(),
-            "optim_state": optimizer.state_dict()}
-    FILE = "model.pth"
-    torch.save(save, FILE)
+    #save_list(loss_acc_list, "C:/Users/alex_/PycharmProjects/EnzymeClassification/outputs/loss_acc.npy")
 
     print('Saving loss and accuracy plots...')
     # accuracy plots
@@ -171,7 +164,10 @@ def train(args):
 
     # serialize the model to disk
     print('Saving model...')
-    #torch.save(model.state_dict(), f"C:/Users/alex_/PycharmProjects/EnzymeClassification/outputs/{model_name}.pth")
+    #save = {"model_state": model.state_dict(),
+            #"optim_state": optimizer.state_dict()}
+    #FILE = "C:/Users/alex_/PycharmProjects/EnzymeClassification/outputs/GRU_model.pth"
+    #torch.save(save, FILE)
 
     print('TRAINING COMPLETE')
 
