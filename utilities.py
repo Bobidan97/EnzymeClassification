@@ -372,17 +372,26 @@ def binary_acc(predicted,test):
 
     return acc
 
+def save_checkpoint(state, filename = "checkpoint.pth"):
+    print("Saving checkpoint")
+    torch.save(state,filename)
+
+def load_checkpoint(checkpoint, model, optimizer):
+    print("Loading checkpoint")
+    model.load_state_dict(checkpoint['state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer'])
+
 def save_list(list, filename):
     np.save(filename, list)
     print("Lists saved successfully")
 
-def loadList(filename):
+def loadlist(filename):
     NumpyArray=np.load(filename)
     return NumpyArray.tolist()
 
 ## train function
 def train_nn(model,train_loader, criterion, optimizer):
-    
+
     model.train()
     # number of batch updates per epoch
     n_batches_per_epoch = len(train_loader)

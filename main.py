@@ -10,8 +10,10 @@ from utilities import (
                         default_w2i_i2w,
                         ProteinSequencesDataset,
                         BinaryClassifier,
+                        load_checkpoint,
+                        save_checkpoint,
                         save_list,
-                        loadList,
+                        loadlist,
                         train_nn,
                         validate_nn,
                         EarlyStopping
@@ -44,7 +46,7 @@ def train(args):
                                                 i2w,
                                                 device,
                                                 max_sequence_length = max_sequence_length,
-                                                debug               = False
+                                                debug               = True
                                               )
 
     # split the dataset into train/validation
@@ -63,6 +65,7 @@ def train(args):
     hidden_size   = args.hidden_size
     vocab_size    = len(w2i)
     learning_rate = args.learning_rate
+    load_model = False
     
     # again I am creating a BinaryClassifier object, 
     # the definition of BinaryClassifier happens in utilities
@@ -79,7 +82,10 @@ def train(args):
     #loss and optimiser
     criterion = torch.nn.BCEWithLogitsLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate, weight_decay = args.weight_decay)
-    
+
+    if load_model:
+        load_checkpoint(torch.load("checkpoint.pth"), model, optimizer)
+
     num_epochs     = args.epochs
     min_loss       = 100000000.0
     min_loss_epoch = 0
@@ -105,6 +111,10 @@ def train(args):
     # loop over epochs
     for epoch in range(num_epochs):
 
+        if epoch == 99:
+            checkpoint = {'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
+            save_checkpoint(checkpoint)
+
         train_epoch_loss, train_epoch_accuracy = train_nn(model, train_loader, criterion, optimizer)
         val_epoch_loss, val_epoch_accuracy, confusion, report = validate_nn(model, test_loader, criterion)
 
@@ -128,7 +138,7 @@ def train(args):
             min_loss       = val_epoch_loss
             min_loss_epoch = epoch
 
-        if val_epoch_accuracy > 75:
+        if val_epoch_accuracy > 80:
             print(confusion)
             print(report)
 
@@ -176,7 +186,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Neural network parameters')
     parser.add_argument('--batch_size', type=int, dest="batch_size", default=64,
                         help='input batch size for training (default: 64)')
-    parser.add_argument('--epochs', type=int, dest="epochs", default=100,
+    parser.add_argument('--epochs', type=int, dest="epochs", default=500,
                         help='number of epochs to train (default: 100)')
     parser.add_argument('--learning_rate', type=int, dest="learning_rate", default=0.001,
                         help='learning rate of neural network (default: 0.001')
