@@ -316,7 +316,7 @@ class BinaryClassifier(nn.Module):
 
 
         #Layers
-        self.encoder_rnn = nn.GRU(input_size,
+        self.encoder_rnn = nn.LSTM(input_size,
                                    hidden_size,
                                    num_layers,
                                    batch_first = True,
@@ -325,7 +325,7 @@ class BinaryClassifier(nn.Module):
         # linear layer to move from hidden_size to 1
         self.fc = nn.Linear(hidden_size, 1)
 
-    def forward(self, batch_of_input_sequences, input_sequences_lengths, h0 = None):
+    def forward(self, batch_of_input_sequences, input_sequences_lengths, h0 = None, c0 = None):
         '''
             Forward pass for NN. Requires a batch of input sequences (as a list of indices!) and a batch of sequence lengths.
             One-hot conversion happens inside forward pass.
@@ -343,10 +343,10 @@ class BinaryClassifier(nn.Module):
         # packing for efficient passing through LSTM
         X_packed = pack_padded_sequence(X, sorted_lengths.data.tolist(), batch_first = True)
 
-        if h0 is None:
-            _, hidden = self.encoder_rnn(X_packed)
+        if h0 is None and c0 is None:
+            _, (hidden, _) = self.encoder_rnn(X_packed)
         else:
-            _, hidden = self.encoder_rnn(X_packed, h0)
+            _, (hidden, _) = self.encoder_rnn(X_packed, (h0,c0))
 
         # hidden is [1,batch_size,hidden_size], we don't need first dimension, so we squeeze it
         # print("hidden size before squeezing:",hidden.size())
