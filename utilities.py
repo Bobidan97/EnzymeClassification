@@ -481,7 +481,7 @@ def validate_nn(model, test_loader, criterion):
     report = classification_report(target_labels_list, model_predicted_list, zero_division=0)
 
     # ROC and AUC creation
-    fpr, tpr, threshold = roc_curve(target_labels, y_pred, pos_label=1)
+    fpr, tpr, threshold = roc_curve(target_labels, y_pred)
     auc = roc_auc_score(target_labels, y_pred)
 
     return avg_val_epoch_loss, avg_val_epoch_acc, confusion, report, fpr, tpr, auc
