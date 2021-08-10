@@ -194,7 +194,7 @@ def train(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Neural network parameters')
-    parser.add_argument('--batch_size', type=int, dest="batch_size", default=64,
+    parser.add_argument('--batch_size', type=int, dest="batch_size", default=3,
                         help='input batch size for training (default: 32)')
     parser.add_argument('--epochs', type=int, dest="epochs", default=100,
                         help='number of epochs to train (default: 100)')
