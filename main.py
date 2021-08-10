@@ -46,7 +46,7 @@ def train(args):
                                                 i2w,
                                                 device,
                                                 max_sequence_length = max_sequence_length,
-                                                debug               = True
+                                                debug               = False
                                               )
 
     # split the dataset into train/validation
@@ -116,7 +116,7 @@ def train(args):
             save_checkpoint(checkpoint)
 
         train_epoch_loss, train_epoch_accuracy = train_nn(model, train_loader, criterion, optimizer)
-        val_epoch_loss, val_epoch_accuracy, confusion, report = validate_nn(model, test_loader, criterion)
+        val_epoch_loss, val_epoch_accuracy, confusion, report, fpr, tpr, auc = validate_nn(model, test_loader, criterion)
 
         #append train outputs to lists
         epoch_loss.append(train_epoch_loss)
@@ -132,15 +132,17 @@ def train(args):
                 break
                 
         print(f"Epoch [{epoch}/{num_epochs}]    |    Average train loss: {train_epoch_loss:0.4f}    |    Average val loss: {val_epoch_loss:0.4f}    |    Average train accuracy: {train_epoch_accuracy:.2f}    |    Average val accuracy: {val_epoch_accuracy:.2f}")
+        print(confusion)
+        print(report)
 
         # compute where min loss happens -> for train loss.
         if val_epoch_loss < min_loss:
             min_loss       = val_epoch_loss
             min_loss_epoch = epoch
 
-        if val_epoch_accuracy > 80:
-            print(confusion)
-            print(report)
+        #if val_epoch_accuracy > 80:
+            #print(confusion)
+            #print(report)
 
     end = time.time()
 
@@ -172,6 +174,15 @@ def train(args):
     #plt.savefig(f"C:/Users/alex_/PycharmProjects/EnzymeClassification/outputs/{loss_plot_name}.png")
     plt.show()
 
+    #ROC curve
+    plt.figure(figsize=(10,7))
+    plt.plot([0,1],[0,1], 'r--')
+    plt.plot(fpr, tpr,label="AUC="+str(auc))
+    plt.xlabel('False positive rate')
+    plt.ylabel('True positive rate')
+    plt.title('ROC curve')
+    plt.show()
+
     # serialize the model to disk
     print('Saving model...')
     #save = {"model_state": model.state_dict(),
@@ -184,11 +195,11 @@ def train(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Neural network parameters')
-    parser.add_argument('--batch_size', type=int, dest="batch_size", default=32,
+    parser.add_argument('--batch_size', type=int, dest="batch_size", default=64,
                         help='input batch size for training (default: 32)')
     parser.add_argument('--epochs', type=int, dest="epochs", default=100,
                         help='number of epochs to train (default: 100)')
-    parser.add_argument('--learning_rate', type=int, dest="learning_rate", default=0.001,
+    parser.add_argument('--learning_rate', type=int, dest="learning_rate", default=0.015,
                         help='learning rate of neural network (default: 0.001')
     parser.add_argument('--num_layers', type=int, dest="num_layers", default=1,
                         help='number of layers in neural network')

@@ -6,7 +6,7 @@ from torch.nn.utils.rnn import pack_padded_sequence
 from torch.utils.data import Dataset
 from Bio import SeqIO
 from collections import defaultdict
-from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.metrics import confusion_matrix, classification_report, roc_curve, roc_auc_score
 import numpy as np
 
 
@@ -475,8 +475,10 @@ def validate_nn(model, test_loader, criterion):
     # confusion matrix and classification report
     confusion = confusion_matrix(target_labels_list, model_predicted_list)
     report = classification_report(target_labels_list, model_predicted_list, zero_division=0)
+    fpr, tpr, threshold = roc_curve(target_labels_list, model_predicted_list)
+    auc = roc_auc_score(target_labels_list, model_predicted_list)
 
-    return avg_val_epoch_loss, avg_val_epoch_acc, confusion, report
+    return avg_val_epoch_loss, avg_val_epoch_acc, confusion, report, fpr, tpr, auc
 
 
 #create early stop class to stop training when loss does not improve for epochs
