@@ -67,8 +67,7 @@ def train(args):
     learning_rate = args.learning_rate
     load_model = False
     
-    # again I am creating a BinaryClassifier object, 
-    # the definition of BinaryClassifier happens in utilities
+
     model = BinaryClassifier(
                                 input_size,
                                 vocab_size,
@@ -177,7 +176,7 @@ def train(args):
     #ROC curve
     plt.figure(figsize=(10,7))
     plt.plot([0,1],[0,1], 'r--')
-    plt.plot(fpr, tpr,label="AUC="+str(auc))
+    plt.plot(fpr, tpr, label="AUC="+str(auc))
     plt.xlabel('False positive rate')
     plt.ylabel('True positive rate')
     plt.title('ROC curve')
@@ -199,7 +198,7 @@ if __name__ == '__main__':
                         help='input batch size for training (default: 32)')
     parser.add_argument('--epochs', type=int, dest="epochs", default=100,
                         help='number of epochs to train (default: 100)')
-    parser.add_argument('--learning_rate', type=int, dest="learning_rate", default=0.015,
+    parser.add_argument('--learning_rate', type=int, dest="learning_rate", default=0.001,
                         help='learning rate of neural network (default: 0.001')
     parser.add_argument('--num_layers', type=int, dest="num_layers", default=1,
                         help='number of layers in neural network')

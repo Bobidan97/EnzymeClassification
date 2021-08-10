@@ -7,6 +7,7 @@ from torch.utils.data import Dataset
 from Bio import SeqIO
 from collections import defaultdict
 from sklearn.metrics import confusion_matrix, classification_report, roc_curve, roc_auc_score
+import pandas as pd
 import numpy as np
 
 
@@ -454,6 +455,8 @@ def validate_nn(model, test_loader, criterion):
 
             # forward pass through NN
             out = model(sequences, sequences_lengths)
+            y_pred = torch.sigmoid(out)
+            print(y_pred)
 
             #compute loss
             loss = criterion(out, target_labels)
@@ -475,8 +478,11 @@ def validate_nn(model, test_loader, criterion):
     # confusion matrix and classification report
     confusion = confusion_matrix(target_labels_list, model_predicted_list)
     report = classification_report(target_labels_list, model_predicted_list, zero_division=0)
-    fpr, tpr, threshold = roc_curve(target_labels_list, model_predicted_list)
-    auc = roc_auc_score(target_labels_list, model_predicted_list)
+
+    # ROC and AUC creation
+
+    fpr, tpr, threshold = roc_curve(target_labels, y_pred)
+    auc = roc_auc_score(target_labels, y_pred)
 
     return avg_val_epoch_loss, avg_val_epoch_acc, confusion, report, fpr, tpr, auc
 
