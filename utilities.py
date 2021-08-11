@@ -456,7 +456,7 @@ def validate_nn(model, test_loader, criterion):
 
             # forward pass through NN
             out = model(sequences, sequences_lengths)
-            y_pred = torch.sigmoid(out).cpu()
+            y_pred = list(torch.sigmoid(out).cpu().numpy())
             print(y_pred)
 
             #compute loss
@@ -481,8 +481,8 @@ def validate_nn(model, test_loader, criterion):
     report = classification_report(target_labels_list, model_predicted_list, zero_division=0)
 
     # ROC and AUC creation
-    fpr, tpr, threshold = roc_curve(target_labels, y_pred)
-    auc = roc_auc_score(target_labels, y_pred)
+    fpr, tpr, threshold = roc_curve(target_labels_list, y_pred)
+    auc = roc_auc_score(target_labels_list, y_pred)
 
     return avg_val_epoch_loss, avg_val_epoch_acc, confusion, report, fpr, tpr, auc
 
