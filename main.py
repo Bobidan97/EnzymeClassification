@@ -4,8 +4,10 @@ import torch
 from torch.utils.data import DataLoader, random_split
 import time
 import argparse
+import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
+from sklearn.metrics import roc_curve, roc_auc_score
 from utilities import (
                         default_w2i_i2w,
                         ProteinSequencesDataset,
@@ -90,8 +92,10 @@ def train(args):
     min_loss_epoch = 0
 
     #lists to store per epoch loss and accuracy values
+    #lists to store ROC inputs
     epoch_loss, epoch_acc          = [], []
     epoch_val_loss, epoch_val_acc  = [], []
+    y_pred_outputs, y_true_labels = [], []
 
     # if not using `--early_stopping`, then use simple names
     loss_plot_name = 'loss'
@@ -115,7 +119,7 @@ def train(args):
             save_checkpoint(checkpoint)
 
         train_epoch_loss, train_epoch_accuracy = train_nn(model, train_loader, criterion, optimizer)
-        val_epoch_loss, val_epoch_accuracy, confusion, report, fpr, tpr, auc = validate_nn(model, test_loader, criterion)
+        val_epoch_loss, val_epoch_accuracy, confusion, report, y_pred, y_true = validate_nn(model, test_loader, criterion)
 
         #append train outputs to lists
         epoch_loss.append(train_epoch_loss)
@@ -124,6 +128,10 @@ def train(args):
         #append validation outputs to lists
         epoch_val_loss.append(val_epoch_loss)
         epoch_val_acc.append(val_epoch_accuracy)
+
+        #append ROC arguments to lists
+        y_pred_outputs.append(y_pred)
+        y_true_labels.append(y_true)
 
         if args.early_stopping:
             early_stopping(val_epoch_loss, val_epoch_accuracy)
@@ -151,6 +159,13 @@ def train(args):
     #save loss and accuracy lists
     loss_acc_list = (epoch_loss, epoch_acc, epoch_val_loss, epoch_val_acc)
     #save_list(loss_acc_list, "C:/Users/alex_/PycharmProjects/EnzymeClassification/outputs/loss_acc.npy")
+
+    # ROC and AUC creation
+    y_pred_array = y_pred_outputs.cpu().numpy().flatten()
+    y_true_array = y_true_labels.cpu().numpy().flatten()
+    fpr, tpr, threshold = roc_curve(y_true_array, y_pred_array)
+    auc = roc_auc_score(y_true_labels, y_pred_outputs)
+    print(auc)
 
     print('Saving loss and accuracy plots...')
     # accuracy plots

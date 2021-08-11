@@ -6,8 +6,7 @@ from torch.nn.utils.rnn import pack_padded_sequence
 from torch.utils.data import Dataset
 from Bio import SeqIO
 from collections import defaultdict
-from sklearn.metrics import confusion_matrix, classification_report, roc_curve, roc_auc_score
-import pandas as pd
+from sklearn.metrics import confusion_matrix, classification_report
 import numpy as np
 
 
@@ -456,12 +455,6 @@ def validate_nn(model, test_loader, criterion):
             # forward pass through NN
             out = model(sequences, sequences_lengths)
 
-            #Inputs for ROC curve
-            y_pred = torch.sigmoid(out).cpu().numpy().flatten()
-            print(type(y_pred))
-            targets_array = target_labels.cpu().numpy().flatten()
-            print(type(targets_array))
-
             #compute loss
             loss = criterion(out, target_labels)
             acc  = binary_acc(out, target_labels)
@@ -469,6 +462,10 @@ def validate_nn(model, test_loader, criterion):
             #accumulate epoch validation loss
             epoch_val_loss += loss.item()
             epoch_val_acc += acc.item()
+
+            # Inputs for ROC curve
+            y_pred = torch.sigmoid(out)
+            y_true = target_labels
 
             #apppend to predicted and target lists
             model_predicted = torch.round(torch.sigmoid(out))
@@ -483,11 +480,8 @@ def validate_nn(model, test_loader, criterion):
     confusion = confusion_matrix(target_labels_list, model_predicted_list)
     report = classification_report(target_labels_list, model_predicted_list, zero_division=0)
 
-    # ROC and AUC creation
-    fpr, tpr, threshold = roc_curve(targets_array, y_pred)
-    auc = roc_auc_score(targets_array, y_pred)
 
-    return avg_val_epoch_loss, avg_val_epoch_acc, confusion, report, fpr, tpr, auc
+    return avg_val_epoch_loss, avg_val_epoch_acc, confusion, report, y_pred, y_true
 
 
 #create early stop class to stop training when loss does not improve for epochs
