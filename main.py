@@ -206,7 +206,7 @@ def train(args):
     plt.ylabel('True Positive Rate')
     plt.xlabel('False Positive Rate')
     plt.show()
-    plt.savefig("roc-curve_LSTM_500.png")
+    plt.savefig("roc-curve_LSTM_1000.png")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Neural network parameters')
