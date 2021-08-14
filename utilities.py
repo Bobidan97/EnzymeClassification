@@ -6,7 +6,7 @@ from torch.nn.utils.rnn import pack_padded_sequence
 from torch.utils.data import Dataset
 from Bio import SeqIO
 from collections import defaultdict
-from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.metrics import confusion_matrix, classification_report, roc_curve, roc_auc_score
 import numpy as np
 
 
@@ -432,6 +432,56 @@ def train_nn(model,train_loader, criterion, optimizer):
 
 ## validation function
 def validate_nn(model, test_loader, criterion):
+
+    # initiate lists
+    model_predicted_list = [] #predicted
+    target_labels_list = [] #true
+
+
+    # evaluation mode
+    model.eval()
+    epoch_val_loss = 0.0
+    epoch_val_acc  = 0.0
+
+    # number of batch updates per epoch
+    n_batches_per_epoch = len(test_loader)
+
+    with torch.no_grad():
+        for batch_idx, data_batch in enumerate(test_loader):
+
+            #get X and Y
+            sequences = data_batch["input"]
+            target_labels = data_batch["target"]
+            sequences_lengths = data_batch["length"]
+
+            # forward pass through NN
+            out = model(sequences, sequences_lengths)
+
+            #compute loss
+            loss = criterion(out, target_labels)
+            acc  = binary_acc(out, target_labels)
+
+            #accumulate epoch validation loss
+            epoch_val_loss += loss.item()
+            epoch_val_acc += acc.item()
+
+            #apppend to predicted and target lists
+            model_predicted = torch.round(torch.sigmoid(out))
+            model_predicted_list.extend(list(model_predicted.cpu().numpy()))
+            target_labels_list.extend(list(target_labels.cpu().numpy()))
+
+    #average epoch loss
+    avg_val_epoch_loss = (epoch_val_loss / n_batches_per_epoch)
+    avg_val_epoch_acc  = (epoch_val_acc / n_batches_per_epoch)
+
+    # confusion matrix and classification report
+    confusion = confusion_matrix(target_labels_list, model_predicted_list)
+    report = classification_report(target_labels_list, model_predicted_list, zero_division=0)
+
+    return avg_val_epoch_loss, avg_val_epoch_acc, confusion, report
+
+def validate_nn_for_roc_curve(model, test_loader, criterion):
+
     # initiate lists
     model_predicted_list = [] #predicted
     target_labels_list = [] #true
@@ -463,12 +513,9 @@ def validate_nn(model, test_loader, criterion):
             epoch_val_loss += loss.item()
             epoch_val_acc += acc.item()
 
-            # Inputs for ROC curve
-            y_pred = torch.sigmoid(out)
-            y_true = target_labels
 
-            #apppend to predicted and target lists
-            model_predicted = torch.round(torch.sigmoid(out))
+            #extend predicted and target lists
+            model_predicted = torch.sigmoid(out)
             model_predicted_list.extend(list(model_predicted.cpu().numpy()))
             target_labels_list.extend(list(target_labels.cpu().numpy()))
 
@@ -477,12 +524,10 @@ def validate_nn(model, test_loader, criterion):
     avg_val_epoch_acc  = (epoch_val_acc / n_batches_per_epoch)
 
     # confusion matrix and classification report
-    confusion = confusion_matrix(target_labels_list, model_predicted_list)
-    report = classification_report(target_labels_list, model_predicted_list, zero_division=0)
+    #confusion = confusion_matrix(target_labels_list, model_predicted_list)
+    #report = classification_report(target_labels_list, model_predicted_list, zero_division=0)
 
-
-    return avg_val_epoch_loss, avg_val_epoch_acc, confusion, report, y_pred, y_true
-
+    return avg_val_epoch_loss, avg_val_epoch_acc, target_labels_list, model_predicted_list
 
 #create early stop class to stop training when loss does not improve for epochs
 class EarlyStopping():
