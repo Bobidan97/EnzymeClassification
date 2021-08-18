@@ -15,8 +15,8 @@ def default_w2i_i2w():
     w2i = dict() #maps word i.e amino acids into index
     i2w = dict() #maps index into word i.e amino acids
 
-    amino_acids = ['A','R','N','D','C','Q','E','G','H','I','L','K','M','F','P','S','T','W','Y','V'] #Vocabulary of the 20 amino acids
-    special_tokens = ['<pad>', '<unk>', '<sos>', '<eos>']
+    amino_acids = ['A','R','N','D','C','Q','E','G','H','I','L','K','M','F','P','S','T','W','Y','V'] # 20 amino acids vocabulary
+    special_tokens = ['<pad>', '<unk>', '<sos>', '<eos>'] # Special tokens vocabulary
 
     for w in amino_acids:
         i2w[len(w2i)] = w
@@ -28,7 +28,7 @@ def default_w2i_i2w():
 
     return w2i, i2w
 
-## our custom dataset for working with sequences
+## custom dataset for working with sequences
 class ProteinSequencesDataset(Dataset):
     '''
         Custom dataset class that works with protein sequences.
@@ -46,10 +46,10 @@ class ProteinSequencesDataset(Dataset):
         self.device = device # Device
         self.max_sequence_length = max_sequence_length + 2 # to account for <eos>/<sos>
 
-        # need to create w2i and i2w dictionaries
+        # create w2i and i2w dictionaries
         self.w2i,self.i2w = w2i, i2w
 
-        # need to construct data object
+        # construct data object
         self.data = self.__construct_data(positive_set, negative_set)
 
     def __len__(self):
@@ -100,7 +100,6 @@ class ProteinSequencesDataset(Dataset):
         positive_records = [record for record in SeqIO.parse(positive_fasta_file, "fasta") if self.__passed_filter(record) == True]
         negative_records = [record for record in SeqIO.parse(negative_fasta_file, "fasta") if self.__passed_filter(record) == True]
 
-
         #start counter
         i = 0
 
@@ -119,7 +118,7 @@ class ProteinSequencesDataset(Dataset):
             input_ = sequence_plus_sos[:self.max_sequence_length-1] + ['<eos>']
             target_ = torch.tensor(
                                     [1],
-                                    dtype=torch.float32,  # this set to float32! Otherwise, BCEwithLogitsLoss complains!
+                                    dtype=torch.float32,  # this set to float32 for BCEwithLogitsLoss
                                     device=self.device
                                     )
 
@@ -143,7 +142,7 @@ class ProteinSequencesDataset(Dataset):
                 print("Input             :", input_)
                 print("Target            :", target_)
 
-            # need to convert into numerical format
+            # convert into numerical format
             input_ = self.__sym2num_conversion(input_)
 
             if self.debug:
@@ -152,7 +151,7 @@ class ProteinSequencesDataset(Dataset):
                 print("Target           :", target_)
                 print("\n")
 
-            # save to data: everything but reference_ is torch tensor (pushed to cpu or gpu, if available)
+            # save to data: everything but reference_ is torch tensor
             data[i]["input"] = input_
             data[i]["target"] = target_
             data[i]["length"] = len_
@@ -175,7 +174,7 @@ class ProteinSequencesDataset(Dataset):
             input_ = sequence_plus_sos[:self.max_sequence_length-1] + ['<eos>']
             target_ = torch.tensor(
                                     [0],
-                                    dtype=torch.float32,  # this set to float32! Otherwise, BCEwithLogitsLoss complains!
+                                    dtype=torch.float32,  # this set to float32 for BCEwithLogitsLoss
                                     device=self.device
                                     )
 
@@ -208,7 +207,7 @@ class ProteinSequencesDataset(Dataset):
                 print("Target           :", target_)
                 print("\n")
 
-            # save to data: everything but reference_ is torch tensor (pushed to cpu or gpu, if available)
+            # save to data: everything but reference_ is torch tensor
             data[i]["input"] = input_
             data[i]["target"] = target_
             data[i]["length"] = len_
@@ -289,8 +288,7 @@ def to_one_hot(batch_of_sequences, vocab_size, device):
 
     return one_hot
 
-### our NN for binary classification:
-### it returns LOGITS so this needs to be taken into account.
+
 #create binary classification neural network
 class BinaryClassifier(nn.Module):
     '''
@@ -314,7 +312,6 @@ class BinaryClassifier(nn.Module):
         self.num_layers = num_layers
         self.device = device
 
-
         #Layers
         self.encoder_rnn = nn.LSTM(input_size,
                                    hidden_size,
@@ -322,7 +319,7 @@ class BinaryClassifier(nn.Module):
                                    batch_first = True,
                                    bidirectional = bidirectional)
 
-        # linear layer to move from hidden_size to 1
+        # linear layer to move hidden_size to 1
         self.fc = nn.Linear(hidden_size, 1)
 
     def forward(self, batch_of_input_sequences, input_sequences_lengths, h0 = None, c0 = None):
@@ -343,15 +340,21 @@ class BinaryClassifier(nn.Module):
         # packing for efficient passing through LSTM
         X_packed = pack_padded_sequence(X, sorted_lengths.data.tolist(), batch_first = True)
 
+        ## Loop for GRU
+        #if h0 is None:
+            #_, hidden = self.encoder_rnn(X_packed)
+        #else:
+            #_, hidden = self.encoder_rnn(X_packed, h0)
+
+        ## Loop for LSTM
         if h0 is None and c0 is None:
             _, (hidden, _) = self.encoder_rnn(X_packed)
         else:
             _, (hidden, _) = self.encoder_rnn(X_packed, (h0,c0))
 
-        # hidden is [1,batch_size,hidden_size], we don't need first dimension, so we squeeze it
-        # print("hidden size before squeezing:",hidden.size())
+        # hidden is [1,batch_size,hidden_size]. Don't need first dimension, so we squeeze it
+
         hidden = hidden.squeeze(0)
-        # print("hidden size after squeezing:",hidden.size())
 
         # apply linear layer -> move from 16 dimensions to 1
         out = self.fc(hidden)
@@ -436,7 +439,6 @@ def validate_nn(model, test_loader, criterion):
     # initiate lists
     model_predicted_list = [] #predicted
     target_labels_list = [] #true
-
 
     # evaluation mode
     model.eval()
