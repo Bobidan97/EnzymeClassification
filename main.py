@@ -15,7 +15,6 @@ from utilities import (
                         load_checkpoint,
                         save_checkpoint,
                         save_list,
-                        loadlist,
                         train_nn,
                         validate_nn,
                         validate_nn_for_roc_curve,
@@ -30,18 +29,14 @@ def train(args):
     torch.manual_seed(0)
 
     # STEP 1: create train/validation dataset
-    positive_set        = args.positive_set #"methyltransferaseEC_2.1.1.fasta"
-    negative_set        = args.negative_set #"EC_2.3andEC_2.1.4.fasta"
-
-    #positive_set        = "positive-set.fasta"
-    #negative_set        = "negative-set.fasta"
+    positive_set        = args.positive_set
+    negative_set        = args.negative_set
 
     max_sequence_length = args.max_seq_length
     device              = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     w2i, i2w            = default_w2i_i2w()
 
-    # here I instantiate object. Note that my class is written elsewhere, here I am just using it.
-    # it saves space and make code easier to read (i.e. there is a mistake, I will go to utilities and make changes in ProteinSequencesDataset).
+    #Assign ProteinSequencesDataset class
     sequence_dataset = ProteinSequencesDataset(
                                                 positive_set, 
                                                 negative_set,
@@ -70,7 +65,7 @@ def train(args):
     learning_rate = args.learning_rate
     load_model = False
     
-
+    #call BinaryClassifier class
     model = BinaryClassifier(
                                 input_size,
                                 vocab_size,
@@ -97,10 +92,9 @@ def train(args):
     epoch_val_loss, epoch_val_acc  = [], []
 
 
-    # if not using `--early_stopping`, then use simple names
+    #if not using `--early_stopping`, then use simple names
     loss_plot_name = 'loss'
     acc_plot_name = 'accuracy'
-    model_name = 'model'
 
     if args.early_stopping:
         print('INFO: Initializing early stopping')
@@ -142,7 +136,6 @@ def train(args):
             min_loss       = val_epoch_loss
             min_loss_epoch = epoch
 
-
     end = time.time()
 
     print(confusion)
@@ -152,10 +145,10 @@ def train(args):
 
     #save loss and accuracy lists
     loss_acc_list = (epoch_loss, epoch_acc, epoch_val_loss, epoch_val_acc)
-    #save_list(loss_acc_list, "C:/Users/alex_/PycharmProjects/EnzymeClassification/outputs/loss_acc.npy")
-
+    save_list(loss_acc_list, "loss_acc.npy")
 
     print('Saving loss and accuracy plots...')
+
     # accuracy plots
     plt.figure(figsize=(10, 7))
     plt.plot(epoch_acc, color='green', label='train accuracy')
@@ -163,7 +156,7 @@ def train(args):
     plt.xlabel('Epochs')
     plt.ylabel('Accuracy')
     plt.legend()
-    #plt.savefig(f"C:/Users/alex_/PycharmProjects/EnzymeClassification/outputs/{acc_plot_name}.png")
+    plt.savefig(f"{acc_plot_name}.png")
     plt.show()
 
     # loss plots
@@ -173,15 +166,15 @@ def train(args):
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.legend()
-    #plt.savefig(f"C:/Users/alex_/PycharmProjects/EnzymeClassification/outputs/{loss_plot_name}.png")
+    plt.savefig(f"{loss_plot_name}.png")
     plt.show()
 
     # serialize the model to disk
     print('Saving model...')
-    #save = {"model_state": model.state_dict(),
-            #"optim_state": optimizer.state_dict()}
-    #FILE = "C:/Users/alex_/PycharmProjects/EnzymeClassification/outputs/GRU_model.pth"
-    #torch.save(save, FILE)
+    save = {"model_state": model.state_dict(),
+            "optim_state": optimizer.state_dict()}
+    FILE = "LSTM_model.pth"
+    torch.save(save, FILE)
 
     print('TRAINING COMPLETE')
 
@@ -206,7 +199,7 @@ def train(args):
     plt.ylabel('True Positive Rate')
     plt.xlabel('False Positive Rate')
     plt.show()
-    plt.savefig("roc-curve_LSTM_1000.png")
+    plt.savefig("roc-curve_LSTM.png")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Neural network parameters')

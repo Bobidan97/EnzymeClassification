@@ -525,10 +525,6 @@ def validate_nn_for_roc_curve(model, test_loader, criterion):
     avg_val_epoch_loss = (epoch_val_loss / n_batches_per_epoch)
     avg_val_epoch_acc  = (epoch_val_acc / n_batches_per_epoch)
 
-    # confusion matrix and classification report
-    #confusion = confusion_matrix(target_labels_list, model_predicted_list)
-    #report = classification_report(target_labels_list, model_predicted_list, zero_division=0)
-
     return avg_val_epoch_loss, avg_val_epoch_acc, target_labels_list, model_predicted_list
 
 #create early stop class to stop training when loss does not improve for epochs
